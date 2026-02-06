@@ -1,6 +1,3 @@
-
----
-
 ## Multi-Laptop Git Workflow (Lenovo + HP)
 
 This guide explains how to keep your GitHub code synchronized while working on multiple laptops using the same GitHub account.
