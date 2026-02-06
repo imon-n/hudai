@@ -6,9 +6,9 @@ This guide explains how to keep your GitHub code synchronized while working on m
 ### One-time Setup (on both laptops)
 
 ```bash
-git config --global user.name "Your Name"
-git config --global user.email "your@email.com"
-git clone https://github.com/USERNAME/REPO.git
+git config --global user.name "imon-n"
+git config --global user.email "imon.eeecu@gmail.com"
+git clone https://github.com/imon-n/REPO.git
 cd REPO
 ```
 
