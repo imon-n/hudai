@@ -53,3 +53,33 @@ git push origin main
 ### Workflow Summary
 
 **Pull before coding → Commit & Push after work → Pull on the other laptop**
+
+---
+```
+project/
+│
+├── controllers/        # controller files
+│   └── user.controller.js
+│
+├── models/             # database models
+│   └── user.model.js
+│
+├── routes/             # route files
+│   └── user.routes.js
+│
+├── middlewares/        # custom middlewares
+│   └── error.middleware.js
+│
+├── config/             # config & setup
+│   └── db.js
+│
+├── utils/              # helper functions
+│   └── catchAsync.js
+│
+├── app.js              # express app config (FILE)
+├── server.js           # server start (FILE)
+├── .env
+├── package.json
+└── README.md
+
+```
