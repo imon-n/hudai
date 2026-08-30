@@ -284,7 +284,22 @@ const router = createBrowserRouter([
 export default router;
 ```
 
-## 10. TaskManager.jsx
+## 10. hooks/useAxios.jsx
+```
+import axios from "axios";
+
+const useAxios = () => {
+  const axiosInstance = axios.create({
+    baseURL: "http://localhost:5000/api",
+  });
+
+  return axiosInstance;
+};
+
+export default useAxios;
+```
+
+## 11. TaskManager.jsx
 
 ```jsx
 import { useEffect, useState } from "react";
