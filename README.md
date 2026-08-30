@@ -25,12 +25,6 @@ Run the backend:
 npm run dev
 ```
 
-Or:
-
-```bash
-npm start
-```
-
 ## 3. Create MongoDB Atlas Database
 
 In MongoDB Atlas, create:
@@ -78,57 +72,42 @@ Our entire backend is inside this file:
 
 ```js
 const dns = require("dns");
-
 dns.setServers(["8.8.8.8", "8.8.4.4"]);
 
 const express = require("express");
-const mongoose = require("mongoose");
+const { MongoClient, ObjectId } = require("mongodb");
 const cors = require("cors");
 require("dotenv").config();
 
 const app = express();
+
 
 // ==================== Middleware ====================
 
 app.use(cors());
 app.use(express.json());
 
+
 // ==================== MongoDB Connection ====================
 
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log("MongoDB Atlas connected");
-  })
-  .catch((error) => {
-    console.log("MongoDB connection error:", error);
-  });
+const client = new MongoClient(process.env.MONGO_URI);
 
-// ==================== Task Schema & Model ====================
+let tasksCollection;
 
-const taskSchema = new mongoose.Schema(
-  {
-    title: {
-      type: String,
-      required: true,
-    },
+async function run() {
+  try {
+    await client.connect();
+    
+    const db = client.db("taskmanager");
+    tasksCollection = db.collection("tasks")
 
-    description: {
-      type: String,
-      default: "",
-    },
-
-    completed: {
-      type: Boolean,
-      default: false,
-    },
-  },
-  {
-    timestamps: true,
+    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+  } finally {
+    // await client.close();
   }
-);
+}
+run().catch(console.dir);
 
-const Task = mongoose.model("Task", taskSchema);
 
 // ==================== Test Route ====================
 
@@ -136,11 +115,12 @@ app.get("/", (req, res) => {
   res.send("Task Manager API is running");
 });
 
+
 // ==================== GET - Get All Tasks ====================
 
 app.get("/api/tasks", async (req, res) => {
   try {
-    const tasks = await Task.find();
+    const tasks = await tasksCollection.find().toArray();
 
     res.status(200).json(tasks);
   } catch (error) {
@@ -150,11 +130,14 @@ app.get("/api/tasks", async (req, res) => {
   }
 });
 
+
 // ==================== GET - Get Single Task ====================
 
 app.get("/api/tasks/:id", async (req, res) => {
   try {
-    const task = await Task.findById(req.params.id);
+    const task = await tasksCollection.findOne({
+      _id: new ObjectId(req.params.id),
+    });
 
     if (!task) {
       return res.status(404).json({
@@ -170,17 +153,27 @@ app.get("/api/tasks/:id", async (req, res) => {
   }
 });
 
+
 // ==================== POST - Create Task ====================
 
 app.post("/api/tasks", async (req, res) => {
   try {
     const { title, description, completed } = req.body;
 
-    const task = await Task.create({
+    const newTask = {
       title,
-      description,
-      completed,
-    });
+      description: description || "",
+      completed: completed || false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const result = await tasksCollection.insertOne(newTask);
+
+    const task = {
+      _id: result.insertedId,
+      ...newTask,
+    };
 
     res.status(201).json(task);
   } catch (error) {
@@ -190,26 +183,39 @@ app.post("/api/tasks", async (req, res) => {
   }
 });
 
+
 // ==================== PUT - Update Task ====================
 
 app.put("/api/tasks/:id", async (req, res) => {
   try {
-    const task = await Task.findByIdAndUpdate(
-      req.params.id,
-      req.body,
+    const { title, description, completed } = req.body;
+
+    const updatedTask = {
+      title,
+      description,
+      completed,
+      updatedAt: new Date(),
+    };
+
+    const result = await tasksCollection.findOneAndUpdate(
       {
-        new: true,
-        runValidators: true,
+        _id: new ObjectId(req.params.id),
+      },
+      {
+        $set: updatedTask,
+      },
+      {
+        returnDocument: "after",
       }
     );
 
-    if (!task) {
+    if (!result) {
       return res.status(404).json({
         message: "Task not found",
       });
     }
 
-    res.status(200).json(task);
+    res.status(200).json(result);
   } catch (error) {
     res.status(500).json({
       message: error.message,
@@ -217,11 +223,14 @@ app.put("/api/tasks/:id", async (req, res) => {
   }
 });
 
+
 // ==================== DELETE - Delete Task ====================
 
 app.delete("/api/tasks/:id", async (req, res) => {
   try {
-    const task = await Task.findByIdAndDelete(req.params.id);
+    const task = await tasksCollection.findOneAndDelete({
+      _id: new ObjectId(req.params.id),
+    });
 
     if (!task) {
       return res.status(404).json({
@@ -240,6 +249,7 @@ app.delete("/api/tasks/:id", async (req, res) => {
   }
 });
 
+
 // ==================== Server ====================
 
 const PORT = process.env.PORT || 5000;
@@ -247,6 +257,7 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
 ```
 
 # React — Frontend
