@@ -65,7 +65,7 @@ const dns = require("dns");
 dns.setServers(["8.8.8.8", "8.8.4.4"]);
 
 const express = require("express");
-const { MongoClient, ObjectId } = require("mongodb");
+const mongoose = require("mongoose");
 const cors = require("cors");
 require("dotenv").config();
 
@@ -80,23 +80,41 @@ app.use(express.json());
 
 // ==================== MongoDB Connection ====================
 
-const client = new MongoClient(process.env.MONGO_URI);
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log("MongoDB Atlas connected");
+  })
+  .catch((error) => {
+    console.log("MongoDB connection error:", error);
+  });
 
-let tasksCollection;
 
-async function run() {
-  try {
-    await client.connect();
-    
-    const db = client.db("taskmanager");
-    tasksCollection = db.collection("tasks")
+// ==================== Task Schema & Model ====================
 
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
-  } finally {
-    // await client.close();
+const taskSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: true,
+    },
+
+    description: {
+      type: String,
+      default: "",
+    },
+
+    completed: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  {
+    timestamps: true,
   }
-}
-run().catch(console.dir);
+);
+
+const Task = mongoose.model("Task", taskSchema);
 
 
 // ==================== Test Route ====================
@@ -110,7 +128,7 @@ app.get("/", (req, res) => {
 
 app.get("/api/tasks", async (req, res) => {
   try {
-    const tasks = await tasksCollection.find().toArray();
+    const tasks = await Task.find();
 
     res.status(200).json(tasks);
   } catch (error) {
@@ -125,9 +143,7 @@ app.get("/api/tasks", async (req, res) => {
 
 app.get("/api/tasks/:id", async (req, res) => {
   try {
-    const task = await tasksCollection.findOne({
-      _id: new ObjectId(req.params.id),
-    });
+    const task = await Task.findById(req.params.id);
 
     if (!task) {
       return res.status(404).json({
@@ -150,20 +166,11 @@ app.post("/api/tasks", async (req, res) => {
   try {
     const { title, description, completed } = req.body;
 
-    const newTask = {
+    const task = await Task.create({
       title,
-      description: description || "",
-      completed: completed || false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    const result = await tasksCollection.insertOne(newTask);
-
-    const task = {
-      _id: result.insertedId,
-      ...newTask,
-    };
+      description,
+      completed,
+    });
 
     res.status(201).json(task);
   } catch (error) {
@@ -178,34 +185,22 @@ app.post("/api/tasks", async (req, res) => {
 
 app.put("/api/tasks/:id", async (req, res) => {
   try {
-    const { title, description, completed } = req.body;
-
-    const updatedTask = {
-      title,
-      description,
-      completed,
-      updatedAt: new Date(),
-    };
-
-    const result = await tasksCollection.findOneAndUpdate(
+    const task = await Task.findByIdAndUpdate(
+      req.params.id,
+      req.body,
       {
-        _id: new ObjectId(req.params.id),
-      },
-      {
-        $set: updatedTask,
-      },
-      {
-        returnDocument: "after",
+        new: true,
+        runValidators: true,
       }
     );
 
-    if (!result) {
+    if (!task) {
       return res.status(404).json({
         message: "Task not found",
       });
     }
 
-    res.status(200).json(result);
+    res.status(200).json(task);
   } catch (error) {
     res.status(500).json({
       message: error.message,
@@ -218,9 +213,7 @@ app.put("/api/tasks/:id", async (req, res) => {
 
 app.delete("/api/tasks/:id", async (req, res) => {
   try {
-    const task = await tasksCollection.findOneAndDelete({
-      _id: new ObjectId(req.params.id),
-    });
+    const task = await Task.findByIdAndDelete(req.params.id);
 
     if (!task) {
       return res.status(404).json({
@@ -247,6 +240,8 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+
 
 ```
 
