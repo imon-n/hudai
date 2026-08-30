@@ -42,21 +42,11 @@ Cluster0
 
 ## 4. MongoDB Atlas Connection
 
-MongoDB Atlas provides a connection string.
-
-It normally looks similar to:
-
-```text
-mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/taskmanager?appName=Cluster0
-```
-
 ## 5. .env File
-
-Create a `.env` file in the backend root:
 
 ```env
 PORT=5000
-MONGO_URI=mongodb+srv://USERNAME:PASSWORD@cluster0.xxxxx.mongodb.net/taskmanager?appName=Cluster0
+MONGO_URI=mongodb+srv://taskmanager:tswjk7kpQuFXImLa@cluster0.x9u2gny.mongodb.net/taskmanager?appName=Cluster0
 ```
 
 ## 6. .gitignore
